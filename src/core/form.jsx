@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 import Context from './context'
 
 /**
@@ -7,62 +7,70 @@ import Context from './context'
  * @prop {function} onChange
  * @prop {function} onSubmit
  * */
-let formQueue = []
 
 class Form extends React.PureComponent {
     constructor(props) {
         super(props)
-        this.getApi = this.getApi.bind(this)
-        this.onFormItemChange = this.onFormItemChange.bind(this)
 
-        this.formQuery = {}
+        this.submit = this.submit.bind(this)
+        this.addItem = this.addItem.bind(this)
+        this.validate = this.validate.bind(this)
+        this.removeItem = this.removeItem.bind(this)
+        this.onItemChange = this.onItemChange.bind(this)
+
+        this.value = {}
         this.depMap = {}
-
-        this.contextValue = {
-            interfaces: this.getApi,  // 用于向父组件发送值
-            onChange: this.onFormItemChange,
-            //子表单组件获得焦点的时候, 按下 enter, 提交表单
-            onSubmit: () => {
-                this.props.onSubmit(this.formQuery)
-            },
-            items: [],
-            getQuery: () => {
-                return Object.assign({}, this.formQuery)
-            }
-        }
-    }
-    componentDidMount() {
-
-        const props = this.props
-        if (props.id) {
-            if (formQueue.some(item => item.id === props.id)) {
-                throw Error('已存在id为' + props.id + '的表单组件')
-            } else {
-                formQueue.push({
-                    id: props.id,
-                    validate: this.validate.bind(this)
-                })
-            }
-        }
-    }
-    componentWillUnmount() {
-        for (let i = 0, len = formQueue.length; i < len; i++) {
-            if (formQueue[i].id === this.props.id) {
-                formQueue.splice(i, 1)
-                break
-            }
-        }
+        this.items = []
     }
     /**
-     * 验证
+     * @function - 添加表单项
+     * @param {Form.Item} item 
+     */
+    addItem(item) {
+        this.items.push(item)
+        // 2. 解析依赖
+        let depQueue = item.props.dependence
+        if (depQueue && typeof depQueue === 'string') {
+            depQueue = [depQueue]
+        }
+        if (depQueue) {
+            const map = this.depMap
+            depQueue.forEach(itemName => {
+                if (!map[itemName]) {
+                    map[itemName] = []
+                }
+                map[itemName].push(item)
+            })
+        }
+
+    }
+    removeItem(item) {
+        let depQueue = item.props.dependence
+        if (depQueue && typeof depQueue === 'string') {
+            depQueue = [depQueue]
+        }
+        if(depQueue) {
+            depQueue.forEach(itemName => {
+                const list = this.depMap[itemName]
+                list.splice(list.indexOf(item), 1)
+            })
+        }
+        this.items.splice(this.items.indexOf(item), 1)
+        delete this.depMap[item.props.name]
+        delete this.value[item.props.name]
+    }
+
+
+    /**
+     * @function-提交
+     * @param {function} callback 验证通过后的回调函数
      * */
-    validate(callback) {
-        let queue = [...this.contextValue.items]
-        if (this.preValidate(queue)) {
-            callback(this.formQuery)
+    submit(callback) {
+        if (this.validate([...this.items])) {
+            callback(this.value)
         }
     }
-    preValidate(queue, isOneOf) {
+    validate(queue, isOneOf) {
         let i = 0
         let item = queue[0]
         while (item) {
@@ -83,7 +91,7 @@ class Form extends React.PureComponent {
             // 未通过校验，验证oneOf中的其他组件
             if (!res) {
                 if (subQueue.length) {
-                    if (!this.preValidate(subQueue, true)) {
+                    if (!this.validate(subQueue, true)) {
                         item.showTip()
                         return false
                     }
@@ -98,90 +106,54 @@ class Form extends React.PureComponent {
         return true
     }
 
-    /**
-     * @function - 用于获取从label组件传过来的接口及参数，然后存储
-     * @param {Object} param0
-     */
-    getApi({ depQueue, subscribeDepChange, validator, item }) {
-        if (depQueue) {
-            const map = this.depMap
-            depQueue.forEach(item => {
-                !map[item] && (map[item] = [])
-                map[item].push(subscribeDepChange)
-            })
-        }
 
-
-        this.contextValue.items.push(item)
-    }
 
     /**
      * @function - 当某个表单组件change时， 执行此函数
+     * @param {string} name 当前更改的表单项 name
      */
-    onFormItemChange(name, valueQueue, needEmit = true) {
+    onItemChange(name, values, needEmit = true) {
 
-        if (this.depMap[name]) {
-            this.depMap[name].forEach(item => item(name, valueQueue))
-        }
-        /* --------------- */
         if (this.props.output) {
-            this.formQuery = this.props.output(this.formQuery, name, ...valueQueue)
+            this.value = this.props.output(this.value, name, ...values)
         } else {
-            this.formQuery[name] = valueQueue[0]
+            this.value[name] = values[0]
         }
 
-        needEmit && this.props.onChange(this.format(this.formQuery), name, ...valueQueue)
+        needEmit && this.props.onChange(Form.format(this.value), name, ...values)
     }
 
-    format(query) {
-        const obj = {}
+    static format(obj) {
+        const newQuery = {}
         let value = null
-        for (let key in query) {
-            value = query[key]
+        for (let key in obj) {
+            value = obj[key]
+
             if (
-                !value && value !== 0
-                || Object.prototype.toString.call(value) === '[object Array]' && value.length === 0
-                || typeof value === 'object' && Object.keys(value).length === 0
+                (!value && value !== 0)
+                || (Object.prototype.toString.call(value) === '[object Array]' && value.length === 0)
+                || (typeof value === 'object' && Object.keys(value).length === 0)
             ) {
                 continue
             }
-            obj[key] = value
+            newQuery[key] = value
         }
-        return obj
+        return newQuery
     }
 
     render() {
         return (
-            <Context.Provider value={this.contextValue}>
+            <Context.Provider value={this}>
                 {this.props.children}
             </Context.Provider>
         )
     }
 }
 
-Form.submit = function (id, callback) {
-    if (!id || (typeof id !== 'string' && typeof id !== 'number')) {
-        throw Error('必须传入id，以提交指定form')
-    }
-    let item = null
-    let got = false
-    for (let i = 0, len = formQueue.length; i < len; i++) {
-        item = formQueue[i]
-        if (item.id === id) {
-            item.validate(callback)
-            got = true
-            break
-        }
-    }
-    if (!got) {
-        console.error('未找到id为' + id + '的表单组件')
-    }
-}
-
 
 
 Form.defaultProps = {
-    onSubmit: () => { },
+    // onSubmit: () => { },
     onChange: () => { }
 }
 
