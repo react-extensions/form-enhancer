@@ -1,5 +1,5 @@
 {
-    "name": "@78d6/react-form",
+    "name": "@react/form",
     "version": "0.1.1",
     "main": "build/main.js",
     "scripts": {

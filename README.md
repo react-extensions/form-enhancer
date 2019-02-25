@@ -2,6 +2,11 @@
 
 #### 基于react的表单设计
 
+### 安装及使用
+`npm install @78d6/react-form`
+
+`import Form from '@78d6/react-form'`
+
 ### 示例：
 
 ### 一、普通用法
