@@ -229,7 +229,7 @@ const formList = [
 |`value`|默认值 或 由父组件更新表单内的值|`*`|-|
 |`filter`|对用户输入值进行过滤|`Function(oldV){return newV}`|-|
 |`validator`|对用户输入值进行验证|`Function(value, formValue){...}`|`()=>true`|
-|`dependence`|此表单项依赖的其他表单项的name值|`String||Array`|-|
+|`dependence`|此表单项依赖的其他表单项的name值|`String`or`Array`|-|
 |`onDepChange`|当依赖的表单项改变时触发此函数|`Function(depName,depValue){return value}`|-|
 |`oneOf`|当指定了oneOf，在表单提交时，只要其中一个表单项验证通过后，就算成功|`Array`|-|
 
