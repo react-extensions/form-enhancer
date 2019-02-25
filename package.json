@@ -67,6 +67,7 @@
         "react-dom": "^16.7.0"
     },
     "devDependencies": {
+        "@78d6/react-form": "^0.1.0",
         "@babel/core": "7.1.6",
         "@svgr/webpack": "2.4.1",
         "babel-core": "7.0.0-bridge.0",
@@ -115,8 +116,7 @@
         "webpack": "4.19.1",
         "webpack-dev-server": "3.1.14",
         "webpack-manifest-plugin": "2.0.4",
-        "workbox-webpack-plugin": "3.6.3",
-        "@78d6/react-form": "^0.1.0"
+        "workbox-webpack-plugin": "3.6.3"
     },
     "description": "基于react的表单设计",
     "repository": {
@@ -132,5 +132,9 @@
     "bugs": {
         "url": "https://github.com/LiZ2z/react-form/issues"
     },
-    "homepage": "https://github.com/LiZ2z/react-form#readme"
+    "homepage": "https://github.com/LiZ2z/react-form#readme",
+    "dependencies": {
+        "react": "^16.8.3",
+        "react-dom": "^16.8.3"
+    }
 }

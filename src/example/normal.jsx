@@ -7,7 +7,7 @@ class Normal extends Component {
         this.form = React.createRef()
     }
     submit() {
-        this.form.current.submit(v=>{
+        this.form.current.submit(v => {
             console.log(v)
         })
     }
@@ -20,11 +20,12 @@ class Normal extends Component {
                 </div>
                 <Form onChange={v => console.log(v)} ref={this.form}>
                     <div>
-                        input one
-                    <Form.Item
+                        <span>input one</span>
+                        <Form.Item
                             name='one'
                             dependence={'two'}
-                            onDepChange={(n, v) => v + 2}
+                            onDepChange={(n, v) => v + 2} 
+                            filter={v=>typeof v==='number'? v : ''}
                             validator={v => parseInt(v) > 4}
                             value=''
                         >
@@ -47,16 +48,14 @@ class Normal extends Component {
                         </Form.Item>
                     </div>
                     <div>
-                        input two
-                    <Form.Item 
-                    name='two' 
-                    dependence={'one'} 
-                    onDepChange={(n, v) => v + 1}
-                    value=""
-                    >
+                        <span>input two</span>
+                        <Form.Item
+                            name='two'
+                            value=""
+                        >
                             {
-                                (value, { onChange }, result) => {
-                                    return <input value={value} onChange={e => onChange(e.target.value)} data-test={result} />
+                                (value, { onChange }) => {
+                                    return <input value={value} onChange={e => onChange(e.target.value)} />
                                 }
                             }
                         </Form.Item>

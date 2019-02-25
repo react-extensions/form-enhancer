@@ -175,7 +175,7 @@ module.exports = function (webpackEnv) {
             library: 'reactForm',
             umdNamedDefine: true
         },
-        externals: {
+        externals: isEnvDevelopment ? {} : {
             react: 'react',
             'react-dom': 'react-dom'
         },
