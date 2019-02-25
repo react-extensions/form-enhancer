@@ -270,15 +270,7 @@ module.exports = function (webpackEnv) {
                 .map(ext => `.${ext}`)
                 .filter(ext => useTypeScript || !ext.includes('ts')),
             alias: {
-                // Support React Native Web
-                // https://www.smashingmagazine.com/2016/08/a-glimpse-into-the-future-with-react-native-for-web/
-                'react-native': 'react-native-web',
                 '@': resolveApp('src'),
-                '@views': resolveApp('src/views'),
-                '@comps': resolveApp('src/components'),
-
-                '@icon': resolveApp('src/components/icon'),
-                '@cn': resolveApp('src/app-lib/class-name')
             },
             plugins: [
                 // Adds support for installing with Plug'n'Play, leading to faster installs and adding

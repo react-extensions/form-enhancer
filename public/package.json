@@ -1,0 +1,20 @@
+{
+  "name": "@78d6/react-form",
+  "version": "0.1.0",
+  "main": "main.js",
+  "description": "基于react的表单设计",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LiZ2z/react-form.git"
+  },
+  "keywords": [
+    "react",
+    "form"
+  ],
+  "author": "LiZ2z",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LiZ2z/react-form/issues"
+  },
+  "homepage": "https://github.com/LiZ2z/react-form#readme"
+}

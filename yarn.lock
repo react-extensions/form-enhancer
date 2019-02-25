@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@78d6/react-form@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@78d6/react-form/-/react-form-0.1.0.tgz#e6bb32759904f1e90ec3ecdd11d46cef2e1c7bb2"
+  integrity sha512-YRQfgPDlu0PMMqENWfhDClEfNzaklNw9+9VyCrx/vt3iHbSCD1aQbzWfnTnadUvse2zZUty6aL1js9UBH/LyhA==
+
 "@babel/code-frame@7.0.0", "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.0.0-beta.35":
   version "7.0.0"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.0.0.tgz#06e2ab19bdb535385559aabb5ba59729482800f8"

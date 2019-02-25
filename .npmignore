@@ -7,6 +7,12 @@
 /config
 /public
 /scripts
+/src
+
+.gitignore
+.npmignore
+.vscode
+yarn.lock
 
 
 # misc
