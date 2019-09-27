@@ -1,16 +1,12 @@
-import React, { Component } from 'react';
+/* eslint-disable no-unused-vars */
+import React from 'react';
+import Normal from './example/normal';
+import TestOne from './example/one';
 
-import Normal from './example/normal'
-
-
-class App extends Component {
-    render() {
-        return (
-            <div>
-                <Normal/>
-            </div>
-        );
-    }
+export default function App() {
+  return (
+    <>
+      <TestOne />
+    </>
+  );
 }
-
-export default App;
