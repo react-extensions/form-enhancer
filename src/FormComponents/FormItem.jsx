@@ -1,23 +1,20 @@
-import React, { useContext, useCallback, useState, useMemo } from 'react';
+import React, { useContext, useCallback, useEffect } from 'react';
 import propTypes from 'prop-types';
 import Context from './context';
 
-function FormItem({ children, filter, name }) {
-  const [value, setValue] = useState();
-  const { onItemChange, depMap } = useContext(Context);
+function FormItem({ children, filter, name, dependence, onDepChange }) {
+  const { onItemChange, addItem, values: formValues } = useContext(Context);
   const isFunctionChildren = typeof children === 'function';
 
-  const changeDep = useCallback(
-    subValue => {
-      if (depMap[name]) {
-        depMap[name].forEach(item => item.onDepChange(name, subValue));
-      }
-    },
-    [depMap, name]
-  );
+  useEffect(() => {
+    return addItem(name, {
+      dependence,
+      onDepChange,
+    });
+  }, [addItem, dependence, name, onDepChange]);
 
-  const handleValueChange = useCallback(
-    (isRawChange, ...values) => {
+  const handleChange = useCallback(
+    (...values) => {
       let subValue;
 
       try {
@@ -26,41 +23,37 @@ function FormItem({ children, filter, name }) {
         throw new Error(`Filter Error in Form Item named [${name}]:\n${err}`);
       }
 
-      setValue(subValue);
-
-      if (isRawChange) {
-        changeDep(subValue);
-      }
-
-      onItemChange(name, subValue, isRawChange);
+      onItemChange(name, subValue);
     },
-    [changeDep, filter, name, onItemChange]
+    [filter, name, onItemChange]
   );
 
-  const handleChange = useMemo(() => handleValueChange.bind(null, true), [
-    handleValueChange,
-  ]);
-
   return isFunctionChildren
-    ? children(handleChange)
+    ? children(formValues[name], handleChange)
     : React.cloneElement(children, {
         ...children.props,
       });
 }
 
 FormItem.defaultProps = {
-  validator: () => true,
+  dependence: [],
   children: undefined,
+  filter: value => value,
+  validator: () => true,
+  onDepChange: () => undefined,
 };
 
 FormItem.propTypes = {
-  onDepChange: propTypes.func,
   name: propTypes.string,
-  validator: propTypes.func,
   filter: propTypes.func,
-  children: propTypes.node,
+  validator: propTypes.func,
+  onDepChange: propTypes.func,
+  children: propTypes.elementType,
   oneOf: propTypes.arrayOf(propTypes.string),
-  dependence: propTypes.oneOfType([propTypes.array, propTypes.string]),
+  dependence: propTypes.oneOfType([
+    propTypes.arrayOf(propTypes.string),
+    propTypes.string,
+  ]),
   // value:
   // defaultValue
 };

@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Context from './context';
+import Context from '../FormComponents/context';
 
 /**
  * @component
@@ -22,28 +22,15 @@ class FormItem extends React.PureComponent {
     // 此组件不适合使用 state
     // ~~~~~~~~~~~~~~~~~~~~~
     this.validateResult = null;
-    this.value = props.value;
-    // 函数bind
-    this.hideTip = this.hideTip.bind(this);
-    this.onChange = this.onChange.bind(this);
-    this.validator = this.validator.bind(this);
-    this.clearState = this.clearState.bind(this);
-    this.doValidate = this.doValidate.bind(this);
-    this.onDepChange = this.onDepChange.bind(this);
   }
 
   componentDidMount() {
+    // eslint-disable-next-line react/destructuring-assignment
     this.props.form.addItem(this);
-    this.changeExact([this.value]);
-  }
-
-  UNSAFE_componentWillReceiveProps(nextP) {
-    if (nextP.value !== this.props.value) {
-      this.changeExact([nextP.value]);
-    }
   }
 
   componentWillUnmount() {
+    // eslint-disable-next-line react/destructuring-assignment
     this.props.form.removeItem(this);
   }
 
@@ -51,24 +38,24 @@ class FormItem extends React.PureComponent {
    * @function - 处理表单onChange事件
    *
    */
-  onChange(...values) {
+  onChange = (...values) => {
     this.changeExact(values, true);
-  }
+  };
 
   /**
    * @function - 当该组件的依赖项发生改变, 会触发此函数,
    * @param {string} name
    * @param {array} values
    */
-  onDepChange(name, values) {
+  onDepChange = (name, values) => {
     const fn = this.props.onDepChange;
     if (!fn) {
       throw Error(`${this.props.name}依赖于${name}，但是缺少onDepChange函数`);
     }
     this.changeExact([fn(name, ...values)]);
-  }
+  };
 
-  changeExact(values, isRawChange = false) {
+  changeExact = (values, isRawChange = false) => {
     if (this.props.filter) {
       try {
         values[0] = this.props.filter(values[0]);
@@ -83,33 +70,33 @@ class FormItem extends React.PureComponent {
     this.forceUpdate();
     isRawChange && this.changeDep(values);
     this.props.form.onItemChange(this.props.name, values, isRawChange);
-  }
+  };
 
-  changeDep(values) {
+  changeDep = values => {
     const name = this.props.name;
     const depMap = this.props.form.depMap;
     if (depMap[name]) {
       depMap[name].forEach(item => item.onDepChange(name, values));
     }
-  }
+  };
 
   /**
    * 失去焦点时进行验证
    * */
-  doValidate() {
+  doValidate = () => {
     this.validator();
     this.showTip();
-  }
+  };
 
-  showTip() {
+  showTip = () => {
     this.forceUpdate();
-  }
+  };
 
   // 失去焦点时，验证一次，错误就设置错误数据
   // 如果之前是错误，下次输入的时候进行一次
   //   -- 如果成功了，隐藏错误提示，或者显示成功提示
   //   -- 如果失败了，继续显示
-  validator() {
+  validator = () => {
     let result = this.props.validator(
       this.value,
       Object.assign({}, this.props.form.value)
@@ -130,12 +117,12 @@ class FormItem extends React.PureComponent {
     }
     this.validateResult = result;
     return boolResult;
-  }
+  };
 
   /**
    * 获取焦点时，隐藏所有类型的提示
    * */
-  clearState() {
+  clearState = () => {
     // 隐藏 oneOf关系的所有表单项提示
     const oneOf = this.props.oneOf;
     if (oneOf) {
@@ -146,13 +133,13 @@ class FormItem extends React.PureComponent {
       });
     }
     this.hideTip();
-  }
+  };
 
-  hideTip() {
+  hideTip = () => {
     if (this.validateResult === null) return;
     this.validateResult = null;
     this.forceUpdate();
-  }
+  };
 
   render() {
     return this.props.children(
