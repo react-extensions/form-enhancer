@@ -2,6 +2,24 @@ import React, { useContext, useCallback, useEffect, useState } from 'react';
 import propTypes from 'prop-types';
 import Context from './context';
 
+/**
+ * 是否验证通过
+ */
+function whetherValidatePass(validateResult) {
+  if (typeof validateResult === 'undefined') {
+    // 如果未返回值，则判定为 true
+    return true;
+  }
+
+  if (typeof validateResult === 'boolean') {
+    // 如果返回的是布尔值，直接返回
+    return validateResult;
+  }
+
+  // 返回了除了以上的任何值，判定为false
+  return false;
+}
+
 function FormItem({
   children,
   filter,
@@ -11,21 +29,20 @@ function FormItem({
   validator,
   oneOf,
 }) {
-  const { onItemChange, addItem, values: formValues } = useContext(Context);
+  const {
+    // 父组件的方法
+    addItem,
+    clearRelativeItemState,
+    onItemChange,
+    // 表单的值
+    values: formValues,
+  } = useContext(Context);
   // render children props
   const isFunctionChildren = typeof children === 'function';
   // 当前表单域的value
   const internalValue = formValues[name];
   // 校验信息
   const [validateResult, setValidateResult] = useState(null);
-
-  useEffect(() => {
-    // 添加\注销
-    return addItem(name, {
-      dependence,
-      onDepChange,
-    });
-  }, [addItem, dependence, name, onDepChange]);
 
   // onChange
   const handleChange = useCallback(
@@ -35,7 +52,7 @@ function FormItem({
       try {
         subValue = filter(...values);
       } catch (err) {
-        throw new Error(`Filter Error in Form Item named [${name}]:\n${err}`);
+        throw new Error(`Filter Error in Form.Item[${name}]:\n${err}`);
       }
 
       onItemChange(name, subValue);
@@ -44,59 +61,63 @@ function FormItem({
   );
 
   // 校验输入
-  const validate = useCallback(() => {
-    let result = validator(internalValue, {
-      ...formValues,
-    });
-    let boolResult = true;
-    // -1 如果未返回值， 则判定为 true
-    if (typeof result === 'undefined') {
-      boolResult = true;
-      result = true;
-    }
-    // -2 如果返回的是布尔值，直接返回
-    else if (typeof result === 'boolean') {
-      boolResult = result;
-    }
-    // -2 返回了除了以上的任何值，判定为false
-    else {
-      boolResult = false;
-    }
-    setValidateResult(result);
-    return boolResult;
-  }, [formValues, internalValue, validator]);
+  const validate = useCallback(
+    () =>
+      validator(internalValue, {
+        ...formValues,
+      }),
+    [formValues, internalValue, validator]
+  );
 
-  const hideTip = useCallback(() => {
+  const doValidate = useCallback(() => {
+    setValidateResult(validate());
+  }, [validate]);
+
+  // 隐藏提示信息
+  const clearSelfValidateState = useCallback(() => {
     if (validateResult === null) {
       return;
     }
     setValidateResult(null);
   }, [validateResult]);
 
+  // 清除状态
   const clearState = useCallback(() => {
-    if (!oneOf) {
-      hideTip();
-      return;
-    }
-    this.props.form.items.forEach(item => {
-      if (oneOf.indexOf(item.props.name) > -1) {
-        item.hideTip();
-      }
+    clearRelativeItemState(name);
+    clearSelfValidateState();
+  }, [clearRelativeItemState, clearSelfValidateState, name]);
+
+  // effect
+  useEffect(() => {
+    // 添加\注销
+    return addItem(name, {
+      dependence: Array.isArray(dependence) ? dependence : [dependence],
+      onDepChange,
+      doValidate: () => whetherValidatePass(validate()),
+      clearState: clearSelfValidateState,
+      oneOf,
     });
-    hideTip();
-  }, [hideTip, oneOf]);
+  }, [
+    addItem,
+    clearSelfValidateState,
+    dependence,
+    name,
+    onDepChange,
+    validate,
+    oneOf,
+  ]);
 
   return isFunctionChildren
     ? children(internalValue, handleChange, {
-        validateResult,
-        validate,
+        result: validateResult,
+        doValidate,
         clearState,
       })
     : React.cloneElement(children, {
         ...children.props,
         value: internalValue,
         onChange: handleChange,
-        onBlur: validate,
+        onBlur: doValidate,
         onFocus: clearState,
       });
 }
@@ -107,6 +128,7 @@ FormItem.defaultProps = {
   filter: value => value,
   validator: () => true,
   onDepChange: () => undefined,
+  oneOf: undefined,
 };
 
 FormItem.propTypes = {
@@ -120,8 +142,6 @@ FormItem.propTypes = {
     propTypes.arrayOf(propTypes.string),
     propTypes.string,
   ]),
-  // value:
-  // defaultValue
 };
 
 export default FormItem;

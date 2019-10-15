@@ -1,19 +1,35 @@
+/* eslint-disable no-underscore-dangle */
 import FormItem from './FormItem';
 
 class Form {
   constructor() {
-    this.items = [];
+    this._items = [];
+    this._values = {};
   }
 
-  addItem = item => {
-    const index = this.items.push(item) - 1;
+  createItem = options => {
+    const item = new FormItem(this, options);
+
+    item.dependence.forEach();
+
+    const index = this._items.length;
+    this._items.push(item);
     return () => {
-      this.items.splice(index, 1);
+      this._items.splice(index, 1);
     };
   };
 
-  createFormItem = () => {
-    return new FormItem(this);
+  onItemChange = v => {
+    
+  };
+
+  setValues = v => {
+    this._values = v;
+    this.notify();
+  };
+
+  notify = () => {
+    this._items.forEach(item => item.update(this._values[item.name]));
   };
 }
 

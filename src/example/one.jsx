@@ -10,9 +10,11 @@ function TestOne() {
     setValues(v);
   }, []);
 
+  const ref = React.createRef();
+
   return (
     <>
-      <Form onChange={handleChange} values={values}>
+      <Form onChange={handleChange} values={values} ref={ref}>
         <div style={{ width: 300, display: 'flex' }}>
           <div>name:</div>
           <Form.Item name="name">
@@ -24,9 +26,25 @@ function TestOne() {
 
         <div style={{ width: 300, marginTop: 20, display: 'flex' }}>
           <div>age:</div>
-          <Form.Item name="age">
-            {(value, setValue) => (
-              <Input value={value} onChange={e => setValue(e.target.value)} />
+          <Form.Item
+            name="age"
+            validator={v => {
+              if (Number(v) > 3) {
+                return '不能大于3';
+              }
+              return true;
+            }}
+          >
+            {(value, setValue, { doValidate, clearState, result }) => (
+              <span>
+                <Input
+                  value={value}
+                  onChange={e => setValue(e.target.value)}
+                  onBlur={doValidate}
+                  onFocus={clearState}
+                />
+                {result}
+              </span>
             )}
           </Form.Item>
         </div>
@@ -36,16 +54,21 @@ function TestOne() {
 
           <Form.Item
             name="childAge"
-            dependence={['age']}
-            onDepChange={v => {
-              setShow(!!v);
+            validator={v => {
+              if (Number(v) > 5) {
+                console.log('false');
+              }
             }}
+            oneOf={['age']}
           >
-            {(value, setValue) =>
-              show ? (
-                <Input value={value} onChange={e => setValue(e.target.value)} />
-              ) : null
-            }
+            {(value, setValue, { doValidate, clearState }) => (
+              <Input
+                value={value}
+                onChange={e => setValue(e.target.value)}
+                onBlur={doValidate}
+                onFocus={clearState}
+              />
+            )}
           </Form.Item>
         </div>
       </Form>

@@ -1,34 +1,36 @@
 class FormItem {
-  constructor(parent, callback, filter, validator, name) {
-    this.callback = callback;
+  constructor(parent, filter, validator, name) {
+    this.callback = () => undefined;
     this.filter = filter;
     this.name = name;
-    this.reomveFromParent = parent.addItem(this);
     this.validator = validator;
+    this.parent = parent;
   }
 
-  destory() {
-    this.reomveFromParent();
-  }
-
-  setValue = this.handleValue.bind(this, true);
-
-  handleValue = (rawValue, ...values) => {
-    if (this.filter) {
-      try {
-        values[0] = this.props.filter(values[0]);
-      } catch (err) {
-        throw err;
-      }
-    }
-
-    // 这里有时会因为filter后的值跟原值相同，又使用了pureComponent 导致不更新
-    // 但是view层显示的值却是未经filte的值,  因此使用forceUpdate强制更新
-    this.value = values[0];
-    this.forceUpdate();
-    isRawChange && this.changeDep(values);
-    this.props.form.onItemChange(this.props.name, values, isRawChange);
+  update = v => {
+    this.callback.call(undefined, v);
   };
+
+  subscribe = cb => {
+    this.callback = cb;
+  };
+
+  setValue = (...values) => {
+    const { filter, parent, name } = this;
+    let subValue;
+    try {
+      subValue = filter(...values);
+    } catch (err) {
+      throw new Error(`Filter Error in Form Item named [${name}]:\n${err}`);
+    }
+    parent.onItemChange(name, subValue);
+
+    this.callback.call(undefined);
+  };
+
+  validate = () =>{
+    
+  }
 
   onDepChange = () => {};
 }
