@@ -10,13 +10,13 @@ import Context from './context';
 import usePubSub from './usePubSub';
 
 const Form = React.forwardRef(function Form(props, ref) {
-  const { children, onChange, values } = props;
+  const { children, onChange, values, defaultValues } = props;
   const isUnderControll = useMemo(
     () => Object.prototype.hasOwnProperty.call(props, 'values'),
     [props]
   );
   // 当表单不受控时，用于保存内部的值
-  const [internalValues, setInternalValues] = useState({});
+  const [internalValues, setInternalValues] = useState(defaultValues);
   const itemsRef = useRef({});
   // 用来记录当前发生改变的表单的值，这里不能使用异步的useState
   const updateValuesRef = useRef({});
@@ -24,11 +24,22 @@ const Form = React.forwardRef(function Form(props, ref) {
 
   // 添加一个表单域
   const addItem = useCallback(
-    (name, { dependence, onDepChange, oneOf, clearState, doValidate }) => {
-      itemsRef.current[name] = {
-        name,
-        doValidate,
+    (
+      name,
+      {
+        activeState,
         clearState,
+        doSubmitValidate,
+        dependence,
+        onDepChange,
+        oneOf,
+      }
+    ) => {
+      itemsRef.current[name] = {
+        activeState,
+        clearState,
+        doSubmitValidate,
+        name,
         oneOf,
       };
 
@@ -72,11 +83,17 @@ const Form = React.forwardRef(function Form(props, ref) {
       updateValuesRef.current = { [name]: itemValue };
       // 发布，通知订阅进行更新
       publish(name, itemValue);
-      const newValues = { ...values, ...updateValuesRef.current };
-      if (!isUnderControll) {
-        setInternalValues(newValues);
+
+      if (isUnderControll) {
+        onChange({ ...values, ...updateValuesRef.current });
+        return;
       }
-      onChange(newValues);
+
+      setInternalValues(prev => {
+        const newValues = { ...prev, ...updateValuesRef.current };
+        onChange(newValues);
+        return newValues;
+      });
     },
     [isUnderControll, onChange, publish, values]
   );
@@ -86,10 +103,9 @@ const Form = React.forwardRef(function Form(props, ref) {
     if (!copyItems.length) {
       return false;
     }
-    let item;
     do {
-      const { doValidate, oneOf } = copyItems.shift();
-      const result = doValidate();
+      const { activeState, doSubmitValidate, oneOf } = copyItems.shift();
+      const passed = doSubmitValidate();
       const oneOfItems = [];
 
       if (oneOf) {
@@ -103,7 +119,7 @@ const Form = React.forwardRef(function Form(props, ref) {
         });
       }
 
-      if (result) {
+      if (passed) {
         // 如果当前表单项校验通过，没必要再去校验oneOf
         // eslint-disable-next-line no-continue
         continue;
@@ -112,12 +128,12 @@ const Form = React.forwardRef(function Form(props, ref) {
       // 如果当前这个表单项未通过校验，则校验其oneOf中的表单项
       if (oneOfItems.length) {
         if (!validate(oneOfItems, true)) {
-          item.showTip();
+          activeState();
           return false;
         }
       } else {
         if (!isOneOf) {
-          item.showTip();
+          activeState();
         }
         return false;
       }
@@ -172,6 +188,7 @@ const Form = React.forwardRef(function Form(props, ref) {
 });
 
 Form.defaultProps = {
+  defaultValues: {},
   children: undefined,
   onChange: () => undefined,
 };
@@ -180,8 +197,10 @@ Form.propTypes = {
   children: propTypes.node,
   onChange: propTypes.func,
   // TODO: 自定义校验
-  // eslint-disable-next-line
+  /* eslint-disable */
   values: propTypes.object,
+  defaultValues: propTypes.object,
+  /* eslint-enable */
 };
 
 export default Form;

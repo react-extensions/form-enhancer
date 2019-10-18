@@ -1,4 +1,10 @@
-import React, { useContext, useCallback, useEffect, useState } from 'react';
+import React, {
+  useContext,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import propTypes from 'prop-types';
 import Context from './context';
 
@@ -42,7 +48,14 @@ function FormItem({
   // 当前表单域的value
   const internalValue = formValues[name];
   // 校验信息
-  const [validateResult, setValidateResult] = useState(null);
+  const validateResultRef = useRef(null);
+  // 单纯用于触发更新
+  // eslint-disable-next-line no-unused-vars
+  const [toggle, setToggle] = useState(false);
+
+  const forceUpdate = useCallback(() => {
+    setToggle(prev => !prev);
+  }, []);
 
   // onChange
   const handleChange = useCallback(
@@ -69,55 +82,67 @@ function FormItem({
     [formValues, internalValue, validator]
   );
 
-  const doValidate = useCallback(() => {
-    setValidateResult(validate());
+  // 在失去焦点时自身的校验
+  const validateOnBlur = useCallback(() => {
+    validateResultRef.current = validate();
+    forceUpdate();
+  }, [forceUpdate, validate]);
+
+  // 提交表单时校验
+  const doSubmitValidate = useCallback(() => {
+    const result = validate();
+    validateResultRef.current = result;
+    return whetherValidatePass(result);
   }, [validate]);
 
   // 隐藏提示信息
-  const clearSelfValidateState = useCallback(() => {
-    if (validateResult === null) {
+  const clearSelfState = useCallback(() => {
+    if (validateResultRef.current === null) {
       return;
     }
-    setValidateResult(null);
-  }, [validateResult]);
+    validateResultRef.current = null;
+    forceUpdate();
+  }, [forceUpdate]);
 
   // 清除状态
   const clearState = useCallback(() => {
     clearRelativeItemState(name);
-    clearSelfValidateState();
-  }, [clearRelativeItemState, clearSelfValidateState, name]);
+    clearSelfState();
+  }, [clearRelativeItemState, clearSelfState, name]);
 
   // effect
   useEffect(() => {
     // 添加\注销
     return addItem(name, {
+      activeState: forceUpdate,
+      clearState: clearSelfState,
       dependence: Array.isArray(dependence) ? dependence : [dependence],
       onDepChange,
-      doValidate: () => whetherValidatePass(validate()),
-      clearState: clearSelfValidateState,
+      doSubmitValidate,
       oneOf,
     });
   }, [
     addItem,
-    clearSelfValidateState,
+    forceUpdate,
+    clearSelfState,
     dependence,
     name,
     onDepChange,
-    validate,
+    doSubmitValidate,
     oneOf,
   ]);
 
   return isFunctionChildren
     ? children(internalValue, handleChange, {
-        result: validateResult,
-        doValidate,
+        result: validateResultRef.current,
+        doValidate: validateOnBlur,
         clearState,
       })
     : React.cloneElement(children, {
         ...children.props,
         value: internalValue,
         onChange: handleChange,
-        onBlur: doValidate,
+        onBlur: validateOnBlur,
         onFocus: clearState,
       });
 }
