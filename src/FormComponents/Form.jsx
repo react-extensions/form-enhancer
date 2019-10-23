@@ -9,6 +9,49 @@ import propTypes from 'prop-types';
 import Context from './context';
 import usePubSub from './usePubSub';
 
+function validate(items, isOneOf) {
+  let copyItems = [...items];
+  if (!copyItems.length) {
+    return false;
+  }
+  do {
+    const { activeState, doSubmitValidate, oneOf } = copyItems.shift();
+    const passed = doSubmitValidate();
+    const oneOfItems = [];
+
+    if (oneOf) {
+      // 将oneOf的表单项从copyItems删除掉，并添加进oneOfItems
+      copyItems = copyItems.filter(subItem => {
+        const belongToOneOf = oneOf.indexOf(subItem.name) === -1;
+        if (!belongToOneOf) {
+          oneOfItems.push(subItem);
+        }
+        return belongToOneOf;
+      });
+    }
+
+    if (passed) {
+      // 如果当前表单项校验通过，没必要再去校验oneOf
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+
+    // 如果当前这个表单项未通过校验，则校验其oneOf中的表单项
+    if (oneOfItems.length) {
+      if (!validate(oneOfItems, true)) {
+        activeState();
+        return false;
+      }
+    } else {
+      if (!isOneOf) {
+        activeState();
+      }
+      return false;
+    }
+  } while (copyItems.length);
+  return true;
+}
+
 const Form = React.forwardRef(function Form(props, ref) {
   const { children, onChange, values, defaultValues } = props;
   const isUnderControll = useMemo(
@@ -98,49 +141,6 @@ const Form = React.forwardRef(function Form(props, ref) {
     [isUnderControll, onChange, publish, values]
   );
 
-  const validate = useCallback((items, isOneOf) => {
-    let copyItems = [...items];
-    if (!copyItems.length) {
-      return false;
-    }
-    do {
-      const { activeState, doSubmitValidate, oneOf } = copyItems.shift();
-      const passed = doSubmitValidate();
-      const oneOfItems = [];
-
-      if (oneOf) {
-        // 将oneOf的表单项从copyItems删除掉，并添加进oneOfItems
-        copyItems = copyItems.filter(subItem => {
-          const belongToOneOf = oneOf.indexOf(subItem.name) === -1;
-          if (!belongToOneOf) {
-            oneOfItems.push(subItem);
-          }
-          return belongToOneOf;
-        });
-      }
-
-      if (passed) {
-        // 如果当前表单项校验通过，没必要再去校验oneOf
-        // eslint-disable-next-line no-continue
-        continue;
-      }
-
-      // 如果当前这个表单项未通过校验，则校验其oneOf中的表单项
-      if (oneOfItems.length) {
-        if (!validate(oneOfItems, true)) {
-          activeState();
-          return false;
-        }
-      } else {
-        if (!isOneOf) {
-          activeState();
-        }
-        return false;
-      }
-    } while (copyItems.length);
-    return true;
-  }, []);
-
   const submit = useCallback(
     cb => {
       if (!validate(Object.values(itemsRef.current))) {
@@ -149,7 +149,7 @@ const Form = React.forwardRef(function Form(props, ref) {
       //
       cb(isUnderControll ? values : internalValues);
     },
-    [internalValues, isUnderControll, validate, values]
+    [internalValues, isUnderControll, values]
   );
 
   // context 传值
@@ -174,14 +174,11 @@ const Form = React.forwardRef(function Form(props, ref) {
     if (!ref) {
       return;
     }
-
     if (typeof ref === 'function') {
       ref({ submit });
     }
-    if (!ref.current) {
-      // eslint-disable-next-line no-param-reassign
-      ref.current = { submit };
-    }
+    // eslint-disable-next-line no-param-reassign
+    ref.current = { submit };
   }, [ref, submit]);
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
