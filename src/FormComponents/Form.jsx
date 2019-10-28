@@ -90,13 +90,15 @@ const Form = React.forwardRef(function Form(props, ref) {
       if (dependence.length) {
         // 订阅依赖
         depUnsubscribes = dependence.map(depName =>
-          subscribe(depName, (...subValues) => {
-            // TODO: item.onDepChange 可能只是想监听变化做其他操作？
-            // 并不需要返回值。如何处理？
-            updateValuesRef.current = {
-              ...updateValuesRef.current,
-              [name]: onDepChange(...subValues),
+          subscribe(depName, (...args) => {
+            // 参数：订阅的值，订阅的name，所有表单值，用于合并form values的函数
+            const combineFormValue = obj => {
+              updateValuesRef.current = {
+                ...updateValuesRef.current,
+                ...obj,
+              };
             };
+            onDepChange(...args, combineFormValue);
           })
         );
       }
@@ -122,10 +124,11 @@ const Form = React.forwardRef(function Form(props, ref) {
 
   // 表单域的值发生改变
   const onItemChange = useCallback(
-    (name, itemValue) => {
-      updateValuesRef.current = { [name]: itemValue };
+    (name, value) => {
+      updateValuesRef.current = { [name]: value };
       // 发布，通知订阅进行更新
-      publish(name, itemValue);
+      // 参数：订阅的值，订阅的name，所有表单值
+      publish(name, value, name, isUnderControll ? values : internalValues);
 
       if (isUnderControll) {
         onChange({ ...values, ...updateValuesRef.current });
@@ -138,9 +141,10 @@ const Form = React.forwardRef(function Form(props, ref) {
         return newValues;
       });
     },
-    [isUnderControll, onChange, publish, values]
+    [internalValues, isUnderControll, onChange, publish, values]
   );
 
+  // 提交表单
   const submit = useCallback(
     cb => {
       if (!validate(Object.values(itemsRef.current))) {
